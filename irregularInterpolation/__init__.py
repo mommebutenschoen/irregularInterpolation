@@ -2,4 +2,4 @@
 irregularInterpolation package initialisation.
 """
 
-from irregularInterpolation.irregularInterpolation import *
+from .irregularInterpolation import *
