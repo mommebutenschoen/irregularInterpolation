@@ -1,6 +1,7 @@
 from scipy.spatial import cKDTree as KDT
 from numpy import array,exp,where,ones,pi
 from pyproj import Proj
+from pdb import set_trace
 
 #Gaussian yielding 1 at zero distance and most distant point at 3 standard deviations.
 distanceFunction = lambda w: exp(-(3.*w/w.max())**2)
@@ -55,7 +56,7 @@ class KDGeographic:
         self.Proj=[]
         self.lonAxis=lonAxis
         self.latAxis=latAxis
-        for i in xrange(1,61):
+        for i in range(1,61):
             #set up projection for each UTM zone:
             self.Proj.append(Proj(proj='utm',zone=i))
             x,y=self.Proj[-1](coords[:,lonAxis],coords[:,latAxis])
@@ -77,4 +78,4 @@ class KDGeographic:
             data.append(d.squeeze())
         return array(data)
 
-UTMzone=lambda lon:int((lon+180)%360)/6 #UTMzone index (0-59)
+UTMzone=lambda lon:int((lon+180)%360)//6 #UTMzone index (0-59)
