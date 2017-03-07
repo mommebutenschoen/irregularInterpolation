@@ -14,17 +14,26 @@ class KDInterpolator(KDT):
         KDT.__init__(self,coords*scales,*opts,**ks)
         self.scales=scales
 
-    def __call__(self,inData,outcoords,k=5,*opts,**ks):
+    def __call__(self,inData,outcoords,k=5,fill_value=None,*opts,**ks):
         data=[]
         for p in outcoords:
             w,c=self.query(p*self.scales,k=k,*opts,**ks)
+            indata=inData[c]
             if w.sum()!=0.:
                 w=distanceFunction(w)
-                w/=w.sum()
             else:
                 w=ones(w.shape)
-                w/=w.sum()
-            data.append((inData[c]*w).sum())
+            if fill_value!=None:
+               mask=where(indata==fill_value,0,1)
+               if not mask.sum():
+                  data.append(fill_value)
+               else:
+                  w*=mask
+                  w/=w.sum()
+                  data.append((indata*w).sum())
+            else:
+               w/=w.sum()
+               data.append((indata*w).sum())
         return array(data)
 
 def KDMask(incoord,scales,inMask,outcoord,lonAxis=None,latAxis=None,crit=.5):
