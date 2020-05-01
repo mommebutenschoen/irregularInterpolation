@@ -4,3 +4,7 @@
 __pycache__
 irregularInterpolation.egg-info/
 _build
+_static
+_templates
+build
+dist
