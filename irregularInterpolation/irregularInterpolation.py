@@ -1,7 +1,6 @@
 from __future__ import print_function
 from numpy import where,array,Inf,arange,diff,exp,sqrt,logical_not,any,isnan,concatenate
 from numpy.ma import getmaskarray,masked_where,getdata
-from numpyXtns import spread
 from scipy.spatial import KDTree
 try:
  try:
