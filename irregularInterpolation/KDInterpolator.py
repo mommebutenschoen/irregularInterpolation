@@ -4,24 +4,57 @@ from pyproj import Proj
 from pdb import set_trace
 
 #Gaussian yielding 1 at zero distance and most distant point at 3 standard deviations.
-distanceFunction = lambda w: exp(-(3.*w/w.max())**2)
+_distanceFunction = lambda w: exp(-(3.*w/w.max())**2)
 
 class KDInterpolator(KDT):
-    """Interpolator for arbitrarily distributed in and output data. Should be used with unmasked 1D input arrays."""
+    """Distance weighted nearest neighbour Interpolator for arbitrarily
+    distributed in and output data. Should be used with unmasked 1D input arrays.
+
+    Attributes:
+     scales (float array): 1-D array with scaling weights for each dimension
+        in order to differentiate the impact of distances across dimensions
+    """
 
     def __init__(self,coords,scales,*opts,**ks):
-        """coords: 1D array of coordinate tuples
-           scales: tuple of dimension weights"""
+
+        """Creates Intrepolator instance from coordinates and dimension scales.
+
+        Args:
+           coords (float array-like): array of coordinate tuples [# of points,
+              # of dimensions]
+           scales (float array-like): tuple of dimension weights [3 of
+              dimensions]
+        """
+
         KDT.__init__(self,coords*scales,*opts,**ks)
         self.scales=scales
 
     def __call__(self,inData,outcoords,k=5,fill_value=None,*opts,**ks):
+        """Interpolates input data on output grid.
+
+        Args:
+           inData (float array):
+           outcoords (float array-like): array of output coordinate tuples
+              [# of points, # of dimensions]
+           k (integer): number of nearest points to consider
+           fill_value (float): input data of this value will be ignored for
+              interpolation, used for invalid points in interpolation output
+           **opts: positional arguments passed to scipy.spatial.cKDTree.query
+              function
+           *ks: keyword arguments passed to scipy.spatial.cKDTree.query
+              function
+
+        Returns:
+           interpolated data (float array).
+        """
+
         data=[]
         for p in outcoords:
             w,c=self.query(p*self.scales,k=k,*opts,**ks)
             indata=inData[c]
+            #convert distances to weights
             if w.sum()!=0.:
-                w=distanceFunction(w)
+                w=_distanceFunction(w)
             else:
                 w=ones(w.shape)
             if fill_value!=None:
@@ -38,8 +71,22 @@ class KDInterpolator(KDT):
         return array(data)
 
 def KDMask(incoord,scales,inMask,outcoord,lonAxis=None,latAxis=None,crit=.5):
-    """Computing interpolated Mask from unmasked input coordinates,
-    dimension weights, input mask and ouput coordinates."""
+    """Computes interpolated mask using KDInterpolator or KDGeographic.
+
+    Args:
+        incoord (float array-like): array of coordinate tuples [# of points,
+           # of dimensions]
+        scales (float array-like): tuple of dimension weights [3 of
+           dimensions]
+        inData (float array):
+        outcoords (float array-like): array of output coordinate tuples
+           [# of points, # of dimensions]
+        crit (float): mask treshold for interpolated value.
+
+    Returns:
+        interpolated mask value for each output grid point (float array).
+
+    """
     if lonAxis==None or latAxis==None:
         kd=KDInterpolator(incoord,scales)
     else:
@@ -50,8 +97,31 @@ def KDMask(incoord,scales,inMask,outcoord,lonAxis=None,latAxis=None,crit=.5):
 class KDGeographic:
     """Lon,lat based interpolation projected on UTM grids to get
     more precise geographic interpolations. KDGeogrphic.interpolator
-    contains a list of KDinterpolators."""
+    contains a list of KDinterpolators.
+
+    Attributes:
+       interpolator (list of KDInterpolators): interpolators for each UTM zone
+       Proj (list of pyproj.Proj) projection instances for each UTM UTMzone
+       lonAxis: position of longitude dimension in input coordinates
+       latAxis: position of latitude dimension in input coordinates
+    """
+
     def __init__(self,coords,scales,lonAxis,latAxis,*opts,**ks):
+        """Collects interpolators for input coordinates.
+
+        Args:
+           coords (float array-like): array of coordinate tuples [# of points,
+              # of dimensions]
+           scales (float array-like): tuple of dimension weights [3 of
+              dimensions]
+           lonAxis: position of longitude dimension in input coordinates
+           latAxis: position of latitude dimension in input coordinates
+           **opts: positional arguments passed to scipy.spatial.cKDTree.query
+              function
+           *ks: keyword arguments passed to scipy.spatial.cKDTree.query
+              function
+        """
+
         self.interpolator=[]
         self.Proj=[]
         self.lonAxis=lonAxis
@@ -64,7 +134,25 @@ class KDGeographic:
             crdsxy[:,lonAxis]=x/111120. #conv back to degree scale for appropriate scaling
             crdsxy[:,latAxis]=y/111120.
             self.interpolator.append(KDInterpolator(crdsxy,scales,*opts,**ks))
+
     def __call__(self,inData,outcoords,k=5,*opts,**ks):
+
+        """Interpolates input data on output grid.
+
+        Args:
+           inData (float array):
+           outcoords (float array-like): array of output coordinate tuples
+              [# of points, # of dimensions]
+           k (integer): number of nearest points to consider
+           **opts: positional arguments passed to scipy.spatial.cKDTree.query
+              function
+           *ks: keyword arguments passed to scipy.spatial.cKDTree.query
+              function
+
+        Returns:
+           interpolated data (float array).
+        """
+
         data=[]
         for p in outcoords:
             #retrieve ID of right projection:
