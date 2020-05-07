@@ -1,4 +1,4 @@
-from __future__ import print_function
+import logging
 from numpy import where,array,Inf,arange,diff,exp,sqrt,logical_not,any,isnan,concatenate
 from numpy.ma import getmaskarray,masked_where,getdata
 from scipy.spatial import KDTree
@@ -151,7 +151,7 @@ def nearestN(dz,NoP=3):
         weights=array([exp(-exp1)])
       else:
         weights=where(dzs<=0,1.,exp(-dzs/dzs.max()*exp1))
-      if weights.sum()<=0: print("Broken weights: ",npos,weights,dzs)
+      if weights.sum()<=0: logging.warning("Broken weights: ",npos,weights,dzs)
       return array(npos),weights,dzs
 
 def nearestR(dz,Range=2):
@@ -247,7 +247,7 @@ class KDpointInterpolator:
             ws=concatenate(exp(-d**2/d.max()**2*exp1),exp(-dr**2/d.max()**2*exp1))
       else:
         self.positions=array(n)
-        print(self.positions)
+        logging.info(self.positions)
         if self.positions.shape[0]==0:
             ws=array([exp(-exp1)])
         else:

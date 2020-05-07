@@ -68,7 +68,7 @@ class KDGeographic:
         data=[]
         for p in outcoords:
             #retrieve ID of right projection:
-            utmID=UTMzone(p[self.lonAxis])
+            utmID=_UTMzone(p[self.lonAxis])
             #interpolate:
             x,y=self.Proj[utmID](p[self.lonAxis],p[self.latAxis])
             pxy=array(p).copy()
@@ -78,4 +78,4 @@ class KDGeographic:
             data.append(d.squeeze())
         return array(data)
 
-UTMzone=lambda lon:int((lon+180)%360)//6 #UTMzone index (0-59)
+_UTMzone=lambda lon:int((lon+180)%360)//6 #UTMzone index (0-59)
