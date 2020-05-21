@@ -7,6 +7,7 @@ from pdb import set_trace
 _distanceFunction = lambda w: exp(-(3.*w/w.max())**2)
 
 class KDInterpolator(KDT):
+
     """Distance weighted nearest neighbour Interpolator for arbitrarily
     distributed in and output data. Should be used with unmasked 1D input arrays.
 
@@ -30,6 +31,7 @@ class KDInterpolator(KDT):
         self.scales=scales
 
     def __call__(self,inData,outcoords,k=5,fill_value=None,*opts,**ks):
+
         """Interpolates input data on output grid.
 
         Args:
@@ -71,6 +73,7 @@ class KDInterpolator(KDT):
         return array(data)
 
 def KDMask(incoord,scales,inMask,outcoord,lonAxis=None,latAxis=None,crit=.5):
+
     """Computes interpolated mask using KDInterpolator or KDGeographic.
 
     Args:
@@ -95,6 +98,7 @@ def KDMask(incoord,scales,inMask,outcoord,lonAxis=None,latAxis=None,crit=.5):
     return where(Mask>=.5,True,False)
 
 class KDGeographic:
+
     """Lon,lat based interpolation projected on UTM grids to get
     more precise geographic interpolations. KDGeogrphic.interpolator
     contains a list of KDinterpolators.
@@ -134,6 +138,20 @@ class KDGeographic:
             crdsxy[:,lonAxis]=x/111120. #conv back to degree scale for appropriate scaling
             crdsxy[:,latAxis]=y/111120.
             self.interpolator.append(KDInterpolator(crdsxy,scales,*opts,**ks))
+        #Universal Polar Stereographic (North)
+        self.Proj.append(Proj(proj='ups'))
+        x,y=self.Proj[-1](coords[:,lonAxis],coords[:,latAxis])
+        crdsxy=coords.copy()
+        crdsxy[:,lonAxis]=x/111120. #conv back to degree scale for appropriate scaling
+        crdsxy[:,latAxis]=y/111120.
+        self.interpolator.append(KDInterpolator(crdsxy,scales,*opts,**ks))
+        #Universal Polar Stereographic (North)
+        self.Proj.append(Proj(proj='ups',south=True))
+        x,y=self.Proj[-1](coords[:,lonAxis],coords[:,latAxis])
+        crdsxy=coords.copy()
+        crdsxy[:,lonAxis]=x/111120. #conv back to degree scale for appropriate scaling
+        crdsxy[:,latAxis]=y/111120.
+        self.interpolator.append(KDInterpolator(crdsxy,scales,*opts,**ks))
 
     def __call__(self,inData,outcoords,k=5,*opts,**ks):
 
@@ -156,7 +174,12 @@ class KDGeographic:
         data=[]
         for p in outcoords:
             #retrieve ID of right projection:
-            utmID=_UTMzone(p[self.lonAxis])
+            if p[self.latAxis]>84.:
+                utmID=-2
+            elif p[self.latAxis]<-80.:
+                utmID=-1
+            else:
+                utmID=_UTMzone(p[self.lonAxis])
             #interpolate:
             x,y=self.Proj[utmID](p[self.lonAxis],p[self.latAxis])
             pxy=array(p).copy()
