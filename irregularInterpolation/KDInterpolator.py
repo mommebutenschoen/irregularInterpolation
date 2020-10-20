@@ -116,7 +116,7 @@ class KDGeographic:
         Args:
            coords (float array-like): array of coordinate tuples [# of points,
               # of dimensions]
-           scales (float array-like): tuple of dimension weights [3 of
+           scales (float array-like): tuple of dimension weights [# of
               dimensions]
            lonAxis: position of longitude dimension in input coordinates
            latAxis: position of latitude dimension in input coordinates
