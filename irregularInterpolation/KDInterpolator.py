@@ -23,7 +23,7 @@ class KDInterpolator(KDT):
         Args:
            coords (float array-like): array of coordinate tuples [# of points,
               # of dimensions]
-           scales (float array-like): tuple of dimension weights [3 of
+           scales (float array-like): tuple of dimension weights [# of
               dimensions]
         """
 
@@ -100,7 +100,7 @@ def KDMask(incoord,scales,inMask,outcoord,lonAxis=None,latAxis=None,crit=.5):
 class KDGeographic:
 
     """Lon,lat based interpolation projected on UTM grids to get
-    more precise geographic interpolations. KDGeogrphic.interpolator
+    more precise geographic interpolations. KDGeographic.interpolator
     contains a list of KDinterpolators.
 
     Attributes:
