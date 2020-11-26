@@ -1,7 +1,7 @@
 from scipy.spatial import cKDTree as KDT
-from numpy import array,exp,where,ones,pi,zeros,NaN
+from numpy import array,exp,where,ones,pi
 from pyproj import Proj
-from numpy.linalg import norm
+from pdb import set_trace
 
 #Gaussian yielding 1 at zero distance and most distant point at 3 standard deviations.
 _distanceFunction = lambda w: exp(-(3.*w/w.max())**2)
@@ -27,8 +27,8 @@ class KDInterpolator(KDT):
               dimensions]
         """
 
-        self.scales=scales
         KDT.__init__(self,coords*scales,*opts,**ks)
+        self.scales=scales
 
     def __call__(self,inData,outcoords,k=5,fill_value=None,*opts,**ks):
 
@@ -52,7 +52,7 @@ class KDInterpolator(KDT):
 
         data=[]
         for p in outcoords:
-            w,c=self.query((p*self.scales),k=k,*opts,**ks)
+            w,c=self.query(p*self.scales,k=k,*opts,**ks)
             indata=inData[c]
             #convert distances to weights
             if w.sum()!=0.:
@@ -144,6 +144,9 @@ class KDGeographic:
         crdsxy=coords.copy()
         crdsxy[:,lonAxis]=x/111120. #conv back to degree scale for appropriate scaling
         crdsxy[:,latAxis]=y/111120.
+        Mask=zeros(len(crdsxy))
+        nearest=( p*(1.e36,(0,0)) )
+        for p in crdsxy
         self.interpolator.append(KDInterpolator(crdsxy,scales,*opts,**ks))
         #Universal Polar Stereographic (North)
         self.Proj.append(Proj(proj='ups',south=True))
@@ -188,86 +191,5 @@ class KDGeographic:
             d=self.interpolator[utmID](inData,array([pxy,]),k=k,*opts,**ks)
             data.append(d.squeeze())
         return array(data)
-
-class KDGeographicPoint:
-
-    """Lon,lat based interpolation projected on UTM grid to get
-    more precise geographic interpolations. Version for individual
-    destination point.
-
-    Attributes:
-       interpolator (KDInterpolator): interpolator
-       Proj (pyproj.Proj) projection instance of UTMzone containing destination point
-       lonAxis: position of longitude dimension in input coordinates
-       latAxis: position of latitude dimension in input coordinates
-    """
-
-    def __init__(self,coords,scales,lonAxis,latAxis,outcoords,*opts,**ks):
-        """Collects interpolators for input coordinates.
-
-        Args:
-           coords (float array-like): array of coordinate tuples [# of points,
-              # of dimensions]
-           scales (float array-like): tuple of dimension weights [# of
-              dimensions]
-           lonAxis: position of longitude dimension in input coordinates
-           latAxis: position of latitude dimension in input coordinates
-           outcoords (float array-like): array of output coordinates
-              [# of dimensions]
-           **opts: positional arguments passed to scipy.spatial.cKDTree.query
-              function
-           *ks: keyword arguments passed to scipy.spatial.cKDTree.query
-              function
-        """
-        self.lonAxis=lonAxis
-        self.latAxis=latAxis
-        self.p=array(outcoords) #output geographic coordinates
-        if self.p[self.latAxis]>84.:
-             utmID=60
-        elif self.p[self.latAxis]<-80.:
-             utmID=61
-        else:
-             utmID=_UTMzone(self.p[self.lonAxis])
-        if utmID < 60:
-            #set up projection for each UTM zone:
-            self.Proj=Proj(proj='utm',zone=utmID)
-        elif utmID==60:
-            #Universal Polar Stereographic (North)
-            self.Proj=Proj(proj='ups')
-        elif utmID==61:
-            #Universal Polar Stereographic (North)
-            self.Proj=Proj(proj='ups',south=True)
-        #UTM coordinates of output point:
-        x,y=self.Proj(self.p[self.lonAxis],self.p[self.latAxis])
-        self.pxy=array(self.p).copy()
-        self.pxy[self.lonAxis]=x/111120. #conv back to degree scale for appropriate scaling
-        self.pxy[self.latAxis]=y/111120.
-        #UTM coordinates of input points:
-        x,y=self.Proj(coords[:,lonAxis],coords[:,latAxis])
-        crdsxy=coords.copy()
-        crdsxy[:,lonAxis]=x/111120. #conv back to degree scale for appropriate scaling
-        crdsxy[:,latAxis]=y/111120.
-        # search for k nearest points:
-        self.interpolator=(KDInterpolator(crdsxy,scales,*opts,**ks))
-        self.coords=coords
-
-    def __call__(self,inData,k=5,*opts,**ks):
-
-        """Interpolates input data on output grid.
-
-        Args:
-           inData (float array):
-           k (integer): number of nearest points to consider
-           **opts: positional arguments passed to scipy.spatial.cKDTree.query
-              function
-           *ks: keyword arguments passed to scipy.spatial.cKDTree.query
-              function
-
-        Returns:
-           interpolated data (float array).
-        """
-
-        d=self.interpolator(inData,array(self.pxy).reshape([1,-1]),k=k,*opts,**ks).squeeze()
-        return d
 
 _UTMzone=lambda lon:int((lon+180)%360)//6 #UTMzone index (0-59)
