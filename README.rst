@@ -1,4 +1,3 @@
-
 =============================
 irregularInterpolation README
 =============================
@@ -23,10 +22,12 @@ Or install the latest releaase from PyPI::
     pip install irregularInterpolation
 
 
+.. _github: https://github.com/mommebutenschoen/irregularInterpolation
+
 Documentation:
-    --------------
+--------------
 
 Documentation to this package can be found on readthedocs_.
 
 
-    .. _readthedocs: https://irregularinterpolation.readthedocs.io/
+.. _readthedocs: https://irregularinterpolation.readthedocs.io/
